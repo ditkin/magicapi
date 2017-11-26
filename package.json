@@ -1,0 +1,27 @@
+{
+  "name": "magicapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "./node_modules/nodemon/bin/nodemon.js ./index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "express": "*",
+    "express-session": "*",
+    "body-parser": "*",
+    "cookie-parser": "*",
+    "connect-mongo": "*",
+    "nodemon": "*",
+    "http": "*",
+    "mongodb": "*",
+    "websocket": "*",
+    "pryjs": "*",
+    "ws": "2.0.3",
+    "bufferutil": "*",
+    "express-oauth-server": "*"
+  }
+}
