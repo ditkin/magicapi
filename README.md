@@ -1,3 +1,2 @@
-- [ ] Figure out good db schema. Decks in user obj?
-- [ ] Figure out how to query mongo for user obj
-- [ ] Figure out how to add deck to user obj
+Featuring async/await usage! It's so awesome.
+
