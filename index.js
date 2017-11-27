@@ -65,6 +65,11 @@ mongo_client.connect('mongodb://localhost:27017/magic', (err, db) => {
     utils.handle_new_deck(req, res, db)
   })
 
+  app.get('/decks', json_parser, (req, res) => {
+    console.log('Showing Decks')
+    utils.handle_show_decks(req, res, db)
+  })
+
   app.listen(1234, () =>
     console.log(`${new Date} Server is listening on port 1234`)
   )
