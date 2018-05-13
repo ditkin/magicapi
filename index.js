@@ -9,25 +9,7 @@ const connect_mongo = require('connect-mongo')
 const mongo_store = connect_mongo(session)
 
 const utils = require('./http_utils')
-const pry = require('pryjs')
-const ws_dep = require('ws')
-
-let ws = new ws_dep.Server({
-  port: 2345,
-  perfMessageDeflate: false,
-})
-
-ws.sendTargeted = (ids, body) =>
-  console.log(ids)
-  ws.clients.forEach(client => {
-    console.log(client)
-    if (
-      ids.includes(client.id)
-      && client.readyState === ws_dep.OPEN
-    ) {
-      client.send(body)
-    }
-  })
+const ws = require('./socket')
 
 const app = express()
 
@@ -86,18 +68,7 @@ mongo_client.connect('mongodb://localhost:27017/magic', (err, db) => {
     utils.handle_show_decks(req, res, db)
   })
 
-  ws.on('connection', socket => {
-    debugger
-    socket.on('message', event => {
-      debugger
-      const data = JSON.parse(event)
-      switch (data.type) {
-        case 'SEND_GAME_UPDATE':
-          const ids = data.body.players.map(player => player.id)
-          ws.sendTargeted(ids, JSON.stringify(data.players))
-      }
-    })
-  })
+  ws.start()
 
   app.listen(1234, () =>
     console.log(`${new Date} Server is listening on port 1234`)
