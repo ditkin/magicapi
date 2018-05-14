@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "./node_modules/nodemon/bin/nodemon.js ./index.js"
+    "start": "./node_modules/nodemon/bin/nodemon.js ./index.js",
+    "dbg": "node --inspect index.js"
   },
   "keywords": [],
   "author": "",
