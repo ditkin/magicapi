@@ -1,19 +1,7 @@
 const ws_dep = require('ws')
-const board_utils = require('./board')
-
-let possible_ids = [123, 456, 789, 101, 102, 103]
-
-const generate_UUID = () => {
-  const index = Math.floor(
-    Math.random() * possible_ids.length
-  )
-  const id_array = possible_ids.splice(index, 1)
-  return id_array[0]
-}
-
-const get_opponent_id = (ids, user_id) => {
-  return ids.find(id => id !== user_id)
-}
+const Board = require('./Board')
+const Room = require('./Room')
+const Id = require('./Id')
 
 exports.start = () => {
   const is_ready = client =>
@@ -24,43 +12,32 @@ exports.start = () => {
     perfMessageDeflate: false,
   })
 
-  ws.rooms = []
-  ws.get_room_with_opponent = () => {
-    const room_index = ws.rooms.findIndex(
-      room => room.ids.length === 1
-    )
-    return room_index
-  }
-
-  ws.seat_user = client => {
-    ws.rooms[client.room].ids.push(client.id)
-  }
-
-  ws.start_game = room_index => {
-    const { ids } = ws.rooms[room_index]
-
-    const game_board = board_utils.get_new(ids)
-    ws.rooms[room_index].board = game_board
-
-    ws.send_start(ids)
-    const body = { ...game_board, type: 'GAME_UPDATED' }
-    ws.send_targeted(ids, JSON.stringify(body))
-  }
-
   ws.create_room = id => {
-    ws.rooms.push({ ids: [id], board: null })
+    Room.create(id)
     const body = { type: 'WAITING_ROOM', id }
     ws.send_targeted([id], JSON.stringify(body))
   }
 
   ws.update_room = (room_id, board) => {
-    ws.rooms[room_id].board = board
+    Room.set(room_id, { board })
+    const { ids } = Room.get(room_id)
+    const body = { ...board, type: 'GAME_UPDATED' }
+    ws.send_targeted(ids, JSON.stringify(body))
+  }
+
+  ws.start_game = room_index => {
+    const { ids } = Room.get(room_index)
+
+    const board = Board.get_new(ids)
+    Room.set(room_index, { board })
+
+    ws.send_start(ids)
     const body = { ...board, type: 'GAME_UPDATED' }
     ws.send_targeted(ids, JSON.stringify(body))
   }
 
   ws.send_start = function(ids) {
-    [...this.clients]
+    ;[...this.clients]
       .filter(client => ids.includes(client.id))
       .forEach(client => {
         const body = {
@@ -69,7 +46,7 @@ exports.start = () => {
             id: client.id,
           },
           opponent: {
-            id: get_opponent_id(ids, client.id),
+            id: Id.get_opponent_id(ids, client.id),
           },
         }
         client.send(JSON.stringify(body))
@@ -89,17 +66,18 @@ exports.start = () => {
 
       switch (data.type) {
         case 'JOIN_GAME':
-          socket.id = generate_UUID()
+          socket.id = Id.generate()
 
-          const room_index = ws.get_room_with_opponent()
+          const room_index = Room.get_with_opponent()
           if (room_index >= 0) {
             // room found
             socket.room = room_index
-            ws.seat_user(socket)
+            Room.seat_user(room_index, socket.id)
             ws.start_game(room_index)
           } else {
             // room not found, creating
             ws.create_room(socket.id)
+            socket.room = Room.get_last()
           }
 
           break
