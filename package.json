@@ -11,18 +11,19 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "express": "*",
-    "express-session": "*",
     "body-parser": "*",
-    "cookie-parser": "*",
-    "connect-mongo": "*",
-    "nodemon": "*",
-    "http": "*",
-    "mongodb": "*",
-    "websocket": "*",
-    "pryjs": "*",
-    "ws": "2.0.3",
     "bufferutil": "*",
-    "express-oauth-server": "*"
+    "connect-mongo": "*",
+    "cookie-parser": "*",
+    "express": "*",
+    "express-oauth-server": "*",
+    "express-session": "*",
+    "http": "*",
+    "immutable": "*",
+    "mongodb": "*",
+    "nodemon": "^1.19.0",
+    "pryjs": "*",
+    "websocket": "*",
+    "ws": "2.0.3"
   }
 }

@@ -67,7 +67,6 @@ exports.start = () => {
       switch (data.type) {
         case 'JOIN_GAME':
           socket.id = Id.generate()
-
           const room_index = Room.get_with_opponent()
           if (room_index >= 0) {
             // room found
@@ -83,7 +82,6 @@ exports.start = () => {
           break
         case 'SEND_GAME_UPDATE':
           const { room } = socket
-
           delete data.type
           ws.update_room(room, data)
       }
