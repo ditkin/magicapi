@@ -1,14 +1,14 @@
 {
   "name": "magicapi",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "src/index.mjs",
   "scripts": {
-    "start": "./node_modules/nodemon/bin/nodemon.js ./index.js",
-    "dbg": "node --inspect index.js"
+    "start": "./node_modules/nodemon/bin/nodemon.js ./src/index.js",
+    "dbg": "node --inspect src/index.mjs"
   },
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": ">=12"
+  },
   "license": "ISC",
   "devDependencies": {
     "body-parser": "*",
