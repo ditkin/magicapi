@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "main": "src/index.mjs",
   "scripts": {
-    "start": "./node_modules/nodemon/bin/nodemon.js ./src/index.js",
-    "dbg": "node --inspect src/index.mjs"
+    "start": "node --experimental-modules src/index.mjs",
+    "dbg": "node --experimental-modules --inspect src/index.mjs"
   },
   "engines": {
     "node": ">=12"
   },
+  "@std/esm": "cjs",
   "license": "ISC",
   "devDependencies": {
     "body-parser": "*",
@@ -25,5 +26,8 @@
     "pryjs": "*",
     "websocket": "*",
     "ws": "2.0.3"
+  },
+  "dependencies": {
+    "@std/esm": "^0.26.0"
   }
 }

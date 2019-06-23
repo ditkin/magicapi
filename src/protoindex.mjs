@@ -1,6 +1,6 @@
 import express from 'express'
 import session from 'express-session'
-
+import ws from 'ws'
 import body_parser from 'body-parser'
 import cookie_parser from 'cookie-parser'
 
@@ -11,8 +11,8 @@ import cookie_parser from 'cookie-parser'
 import * as utils from './http_utils.mjs'
 import { startSocketServer } from './socket.mjs'
 
+const server = express()
 const PORT = process.env.PORT || 1234
-const app = express()
 
 // Setup middleware
 const json_parser = body_parser.json()
@@ -42,10 +42,10 @@ const session_params = {
 }
 
 // Define middleware
-app.use(session(session_params))
+server.use(session(session_params))
 
 // Enable CORS
-app.use((req, res, next) => {
+server.use((req, res, next) => {
   res.header(
     'Access-Control-Allow-Origin',
     'chrome-extension://kdjokbdmplcfbigkcjekknnfboidokfo'
@@ -58,26 +58,60 @@ app.use((req, res, next) => {
   next()
 })
 
-app.post('/login', json_parser, (req, res, db) => {
+server.post('/login', json_parser, (req, res, db) => {
   console.log('Logging In')
   utils.handle_login(req, res, db)
 })
 
-app.post('/deck', json_parser, (req, res, db) => {
+server.post('/deck', json_parser, (req, res, db) => {
   console.log('Creating Deck')
   utils.handle_new_deck(req, res, db)
 })
 
-app.get('/decks', json_parser, (req, res, db) => {
+server.get('/decks', json_parser, (req, res, db) => {
   console.log('Showing Decks')
   utils.handle_show_decks(req, res, db)
 })
 
-startSocketServer()
+const wss = new ws.Server({ server })
 
-app.listen(3000, () =>
+wss.on('connection', socket => {
+  console.log('Client connected')
+  socket.on('close', () =>
+    console.log('Client disconnected')
+  )
+})
+
+server.listen(PORT, () =>
   console.log(
     `${new Date()} Server is listening on port ${PORT}`
   )
 )
-//})
+
+//   socket.on('message', event => {
+//     const data = JSON.parse(event)
+
+//     switch (data.type) {
+//       case 'JOIN_GAME':
+//         socket.id = Id.generate()
+//         const room_index = Room.getWithOpponent()
+//         if (room_index >= 0) {
+//           // room found
+//           socket.room = room_index
+//           Room.seatUser(room_index, socket.id)
+//           ws.start_game(room_index)
+//         } else {
+//           // room not found, creating
+//           ws.create_room(socket.id)
+//           socket.room = Room.getLast()
+//         }
+
+//         break
+//       case 'SEND_GAME_UPDATE':
+//         const { room } = socket
+//         delete data.type
+//         ws.update_room(room, data)
+//     }
+//   })
+// })
+// startSocketServer(server)

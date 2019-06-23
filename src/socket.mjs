@@ -3,14 +3,13 @@ import * as Board from './Board.mjs'
 import * as Room from './Room.mjs'
 import * as Id from './Id.mjs'
 
-export const startSocketServer = () => {
+const port = process.env.PORT || 1234
+
+export const startSocketServer = httpServer => {
   const is_ready = client =>
     client.readyState === ws_dep.OPEN
 
-  let ws = new ws_dep.Server({
-    port: 2345,
-    perfMessageDeflate: false,
-  })
+  let ws = new ws_dep.Server({ port })
 
   ws.create_room = id => {
     Room.create(id)

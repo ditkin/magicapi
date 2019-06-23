@@ -36,5 +36,6 @@ export const create = id => {
 }
 
 export const seatUser = (room_index, user_id) => {
+  console.log(`Seating ${user_id}`)
   rooms[room_index].ids.push(user_id)
 }
