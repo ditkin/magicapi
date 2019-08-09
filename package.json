@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "src/index.mjs",
   "scripts": {
-    "start": "node --experimental-modules src/index.mjs",
-    "dbg": "node --experimental-modules --inspect src/index.mjs"
+    "start": "node --experimental-modules src/protoindex.mjs",
+    "dbg": "node --experimental-modules --inspect src/protoindex.mjs"
   },
   "engines": {
     "node": ">=12"
@@ -16,6 +16,7 @@
     "connect-mongo": "*",
     "cookie-parser": "*",
     "express": "*",
+    "express-ws": "*",
     "express-oauth-server": "*",
     "express-session": "*",
     "http": "*",
