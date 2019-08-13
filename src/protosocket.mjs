@@ -2,7 +2,8 @@ import * as Board from './Board.mjs'
 import * as Room from './Room.mjs'
 import * as Id from './Id.mjs'
 
-export const setupSocket = ws => {
+export const setupSocket = (ws, appWithWs) => {
+  debugger
   const is_ready = client =>
     client.readyState === ws_dep.OPEN
 
@@ -31,7 +32,7 @@ export const setupSocket = ws => {
   }
 
   ws.send_start = function(ids) {
-    ;[...this.clients]
+    ;[...appWithWs.clients]
       .filter(client => ids.includes(client.id))
       .forEach(client => {
         const body = {
@@ -48,39 +49,39 @@ export const setupSocket = ws => {
   }
 
   ws.send_targeted = (ids, message) =>
-    [...ws.clients]
+    [...appWithWs.clients]
       .filter(client => ids.includes(client.id))
       .forEach(client => {
         client.send(message)
       })
 
-  ws.onopen((event, ...args) => {
+  ws.on('open', (event, ...args) => {
     debugger
     console.log('New connection!')
   })
 
-  ws.onmessage((event, ...args) => {
+  ws.on('message', msg => {
     debugger
-    const data = JSON.parse(event)
+    const data = JSON.parse(msg)
 
     switch (data.type) {
       case 'JOIN_GAME':
-        socket.id = Id.generate()
+        ws.id = Id.generate()
         const room_index = Room.getWithOpponent()
         if (room_index >= 0) {
           // room found
-          socket.room = room_index
-          Room.seatUser(room_index, socket.id)
+          ws.room = room_index
+          Room.seatUser(room_index, ws.id)
           ws.start_game(room_index)
         } else {
           // room not found, creating
-          ws.create_room(socket.id)
-          socket.room = Room.getLast()
+          ws.create_room(ws.id)
+          ws.room = Room.getLast()
         }
 
         break
       case 'SEND_GAME_UPDATE':
-        const { room } = socket
+        const { room } = ws
         delete data.type
         ws.update_room(room, data)
     }

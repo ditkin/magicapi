@@ -12,7 +12,7 @@ import * as utils from './http_utils.mjs'
 import { setupSocket } from './protosocket.mjs'
 
 const app = express()
-empowerWithSocket(app)
+const appWithWs = empowerWithSocket(app)
 
 const PORT = process.env.PORT || 1234
 
@@ -83,7 +83,11 @@ app.get('/decks', json_parser, (req, res, db) => {
 })
 
 app.ws('/', (ws, req) => {
-  setupSocket(ws)
+  setupSocket(ws, appWithWs.getWss())
+  // console.log('started')
+  // ws.on('message', msg => {
+  //   console.log(msg)
+  // })
 })
 
 app.listen(PORT, () =>
