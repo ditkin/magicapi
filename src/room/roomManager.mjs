@@ -23,10 +23,11 @@ export const seat_user = (room_id, client_id) => {
     return
   }
 
-  const room = get(room_id)
+  const room = get(room_index)
+  console.log('room ', room)
   const updated_room = room.set(
-    players,
-    room.players.push(client_id)
+    'player_ids',
+    room.player_ids.push(client_id)
   )
   rooms[room_index] = updated_room
   return updated_room

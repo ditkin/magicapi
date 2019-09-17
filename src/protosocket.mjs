@@ -63,6 +63,7 @@ function send_to_ids(ids, message) {
 
 function send_to_all(message) {
   ;[..._appWithWs.clients].forEach(client => {
+    console.log(client.id)
     client.send(message)
   })
 }
@@ -109,6 +110,7 @@ export const setupSocket = (client, appWithWs) => {
         break
 
       case 'CREATE_ROOM':
+        console.log(data)
         const uuid = Id.generate({ room: true })
         client.room_id = uuid
         const newRoom = new Room({
@@ -129,6 +131,7 @@ export const setupSocket = (client, appWithWs) => {
         break
 
       case 'JOIN_ROOM':
+        console.log('join data: ', data)
         const room = roomManager.seat_user(
           data.uuid,
           client.id
@@ -139,7 +142,6 @@ export const setupSocket = (client, appWithWs) => {
             info: 'ROOM_NOT_FOUND',
             id: data.uuid,
           }
-          console.log(body)
           client.send(JSON.stringify(body))
           break
         }
