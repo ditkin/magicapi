@@ -17,6 +17,19 @@ export const create = room => rooms.push(room)
 export const get = room_id =>
   rooms.find(room => room.uuid === room_id)
 
+export const unseat_user = (room_id, client_id) => {
+  const room_index = get_index(room_id)
+  if (room_index === -1) {
+    return
+  }
+
+  console.log('room ', { ...rooms[room_index] })
+  rooms[room_index] = rooms[room_index].update(
+    'player_ids',
+    ids => ids.filterNot(id => id === client_id)
+  )
+}
+
 export const seat_user = (room_id, client_id) => {
   const room_index = get_index(room_id)
   if (room_index === -1) {

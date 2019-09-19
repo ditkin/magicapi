@@ -28,11 +28,11 @@ function update_room(room_id, board) {
   send_to_ids(ids, JSON.stringify(body))
 }
 
-function start_game(room_index) {
-  const { ids } = roomManager.get(room_index)
+function start_game(room_id) {
+  const { player_ids } = roomManager.get(room_index)
 
   const board = Board.getNew(ids)
-  roomManager.set(room_index, { board })
+  roomManager.set(room_id, { board })
 
   send_start(ids)
   const body = { ...board, type: 'GAME_UPDATED' }
@@ -118,14 +118,20 @@ export const setupSocket = (client, appWithWs) => {
           owner_id: client.id,
           player_ids: List([client.id]),
           name: data.name,
-          max_capacity: data.max_capacity,
+          max_players: data.max_players,
         })
         roomManager.create(newRoom)
 
+        client.send(
+          JSON.stringify({
+            type: 'ROOM_JOINED',
+            room: newRoom.toJS(),
+          })
+        )
         send_to_all(
           JSON.stringify({
-            type: 'ROOM_CREATED',
-            room: newRoom.toJS(),
+            type: 'ROOMS_UPDATED',
+            rooms: roomManager.get_all_as_json(),
           })
         )
         break
@@ -146,23 +152,44 @@ export const setupSocket = (client, appWithWs) => {
           break
         }
 
-        client.room = data.uuid
+        client.room_id = data.uuid
 
-        if (room.max_capacity === room.player_ids.size) {
-          start_game(room_index)
+        if (room.max_players === room.player_ids.size) {
+          start_game(room_id)
         } else {
           const body = {
             type: 'ROOM_JOINED',
             room: room.toJS(),
           }
-          console.log(body)
           client.send(JSON.stringify(body))
+          send_to_all(
+            JSON.stringify({
+              type: 'ROOMS_UPDATED',
+              rooms: roomManager.get_all_as_json(),
+            })
+          )
         }
+        break
+
+      case 'LEAVE_ROOM':
+        roomManager.unseat_user(client.room_id, client.id)
+        client.room_id = undefined
+        client.send(
+          JSON.stringify({
+            type: 'ROOM_LEFT',
+          })
+        )
+        send_to_all(
+          JSON.stringify({
+            type: 'ROOMS_UPDATED',
+            rooms: roomManager.get_all_as_json(),
+          })
+        )
         break
 
       case 'SEND_GAME_UPDATE':
         delete data.type
-        update_room(client.room, data)
+        update_room(client.room_id, data)
     }
   })
 

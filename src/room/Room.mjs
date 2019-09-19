@@ -5,7 +5,7 @@ const defaults = {
   owner_id: null,
   name: 'Game room',
   uuid: null,
-  max_capacity: 2,
+  max_players: 2,
   player_ids: List(),
   board: null,
 }
