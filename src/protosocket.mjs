@@ -28,25 +28,22 @@ function update_room(room_id, board) {
   send_to_ids(ids, JSON.stringify(body))
 }
 
-function start_game(room_id) {
-  const { player_ids } = roomManager.get(room_index)
+function start_game(room_id, client_id) {
+  const { player_ids } = roomManager.get(room_id)
 
-  const board = Board.getNew(ids)
+  const board = Board.getNew(player_ids)
   roomManager.set(room_id, { board })
 
-  send_start(ids)
+  send_start(player_ids, client_id)
   const body = { ...board, type: 'GAME_UPDATED' }
-  send_to_ids(ids, JSON.stringify(body))
+  send_to_ids(player_ids, JSON.stringify(body))
 }
 
-function send_start(ids) {
+function send_start(ids, client_id) {
   const body = {
     type: 'GAME_START',
-    user: {
-      id: client.id,
-    },
     opponent: {
-      id: Id.getOpponentId(ids, client.id),
+      id: Id.getOpponentId(ids, client_id),
     },
   }
   const message = JSON.stringify(body)
@@ -137,7 +134,6 @@ export const setupSocket = (client, appWithWs) => {
         break
 
       case 'JOIN_ROOM':
-        console.log('join data: ', data)
         const room = roomManager.seat_user(
           data.uuid,
           client.id
@@ -153,9 +149,8 @@ export const setupSocket = (client, appWithWs) => {
         }
 
         client.room_id = data.uuid
-
         if (room.max_players === room.player_ids.size) {
-          start_game(room_id)
+          start_game(data.uuid, client.id)
         } else {
           const body = {
             type: 'ROOM_JOINED',
