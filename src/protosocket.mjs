@@ -23,31 +23,38 @@ function update_room(room_id, board) {
 
   roomManager.set(room_id, { board })
 
-  const { ids } = roomManager.get(room_id)
+  const { player_ids } = roomManager.get(room_id)
   const body = { ...board, type: 'GAME_UPDATED' }
-  send_to_ids(ids, JSON.stringify(body))
+  send_to_ids(player_ids, JSON.stringify(body))
 }
 
-function start_game(room_id, client_id) {
+function start_game(room_id, joiner_id) {
   const { player_ids } = roomManager.get(room_id)
 
   const board = Board.getNew(player_ids)
   roomManager.set(room_id, { board })
 
-  send_start(player_ids, client_id)
+  send_start(player_ids, joiner_id)
   const body = { ...board, type: 'GAME_UPDATED' }
   send_to_ids(player_ids, JSON.stringify(body))
 }
 
-function send_start(ids, client_id) {
-  const body = {
+function send_start(ids, joiner_id) {
+  // tell the users which player joined last
+  const owner_id = Id.getOpponentId(ids, joiner_id)
+  const joinerStartBody = {
     type: 'GAME_START',
-    opponent: {
-      id: Id.getOpponentId(ids, client_id),
-    },
+    opponentId: owner_id,
   }
-  const message = JSON.stringify(body)
-  send_to_ids(ids, message)
+  const joinerStartMessage = JSON.stringify(joinerStartBody)
+  send_to_ids([joiner_id], joinerStartMessage)
+
+  const ownerStartBody = {
+    type: 'GAME_START',
+    opponentId: joiner_id,
+  }
+  const ownerStartMessage = JSON.stringify(ownerStartBody)
+  send_to_ids([owner_id], ownerStartMessage)
 }
 
 function send_to_ids(ids, message) {
