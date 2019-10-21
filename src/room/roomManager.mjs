@@ -1,10 +1,4 @@
-import immutable from 'immutable'
-const { List, Record, toJS } = immutable
-
-// TODO use an immutable and do react-like state updates to overwrite
 const rooms = []
-
-// v2
 
 const get_index = room_id =>
   rooms.findIndex(room => room.uuid === room_id)
@@ -56,19 +50,4 @@ export const set = (room_id, properties) => {
   const updated_room = room.merge(properties)
   rooms[room_index] = updated_room
   return updated_room
-}
-
-// v1
-export const getLast = () => rooms.length - 1
-
-export const getWithOpponent = () => {
-  const room_index = rooms.findIndex(
-    room => room.ids.length === 1
-  )
-  return room_index
-}
-
-export const seatUser = (room_index, user_id) => {
-  console.log(`Seating ${user_id}`)
-  rooms[room_index].ids.push(user_id)
 }
