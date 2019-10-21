@@ -9,7 +9,7 @@ import empowerWithSocket from 'express-ws'
 // import mongo_store from session
 
 import * as utils from './http_utils.mjs'
-import { setupSocket } from './protosocket.mjs'
+import { setupSocket } from './socket.mjs'
 
 const app = express()
 const appWithWs = empowerWithSocket(app)

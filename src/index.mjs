@@ -1,18 +1,20 @@
 import express from 'express'
 import session from 'express-session'
-
+import ws from 'ws'
 import body_parser from 'body-parser'
 import cookie_parser from 'cookie-parser'
-
+import empowerWithSocket from 'express-ws'
 // import mongo from 'mongodb'
 // import connect_mongo from 'connect-mongo'
 // import mongo_store from session
 
 import * as utils from './http_utils.mjs'
-import { startSocketServer } from './socket.mjs'
+import { setupSocket } from './socket.mjs'
+
+const app = express()
+const appWithWs = empowerWithSocket(app)
 
 const PORT = process.env.PORT || 1234
-const app = express()
 
 // Setup middleware
 const json_parser = body_parser.json()
@@ -58,6 +60,13 @@ app.use((req, res, next) => {
   next()
 })
 
+app.get('/', json_parser, (req, res, db) => {
+  console.log('healthcheck')
+  res.writeHead(200)
+
+  res.end('healthy')
+})
+
 app.post('/login', json_parser, (req, res, db) => {
   console.log('Logging In')
   utils.handle_login(req, res, db)
@@ -73,11 +82,16 @@ app.get('/decks', json_parser, (req, res, db) => {
   utils.handle_show_decks(req, res, db)
 })
 
-startSocketServer()
+app.ws('/', (ws, req) => {
+  setupSocket(ws, appWithWs.getWss())
+  // console.log('started')
+  // ws.on('message', msg => {
+  //   console.log(msg)
+  // })
+})
 
-app.listen(3000, () =>
+app.listen(PORT, () =>
   console.log(
     `${new Date()} Server is listening on port ${PORT}`
   )
 )
-//})
