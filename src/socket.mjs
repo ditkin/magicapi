@@ -1,90 +1,175 @@
-import ws_dep from 'ws'
 import * as Board from './Board.mjs'
-import * as Room from './Room.mjs'
+import * as roomManager from './room/roomManager.mjs'
 import * as Id from './Id.mjs'
+import Room from './room/Room.mjs'
+import immutable from 'immutable'
+const { List } = immutable
 
-const port = process.env.PORT || 1234
+let _appWithWs
 
-export const startSocketServer = httpServer => {
-  const is_ready = client =>
-    client.readyState === ws_dep.OPEN
-
-  let ws = new ws_dep.Server({ port })
-
-  ws.create_room = id => {
-    Room.create(id)
-    const body = { type: 'WAITING_ROOM', id }
-    ws.send_targeted([id], JSON.stringify(body))
+function register(client) {
+  client.id = Id.generate()
+  const body = {
+    type: 'REGISTERED',
+    user: {
+      id: client.id,
+    },
+    rooms: roomManager.get_all_as_json(),
   }
+  client.send(JSON.stringify(body))
+}
 
-  ws.update_room = (room_id, board) => {
-    Room.set(room_id, { board })
-    const { ids } = Room.get(room_id)
-    const body = { ...board, type: 'GAME_UPDATED' }
-    ws.send_targeted(ids, JSON.stringify(body))
-  }
+function create_room(client, data) {
+  const uuid = Id.generate({ room: true })
+  client.room_id = uuid
+  const newRoom = new Room({
+    uuid,
+    owner_id: client.id,
+    player_ids: List([client.id]),
+    name: data.name,
+    max_players: data.max_players,
+  })
+  roomManager.create(newRoom)
 
-  ws.start_game = room_index => {
-    const { ids } = Room.get(room_index)
-
-    const board = Board.getNew(ids)
-    Room.set(room_index, { board })
-
-    ws.send_start(ids)
-    const body = { ...board, type: 'GAME_UPDATED' }
-    ws.send_targeted(ids, JSON.stringify(body))
-  }
-
-  ws.send_start = function(ids) {
-    ;[...this.clients]
-      .filter(client => ids.includes(client.id))
-      .forEach(client => {
-        const body = {
-          type: 'GAME_START',
-          user: {
-            id: client.id,
-          },
-          opponent: {
-            id: Id.getOpponentId(ids, client.id),
-          },
-        }
-        client.send(JSON.stringify(body))
-      })
-  }
-
-  ws.send_targeted = (ids, message) =>
-    [...ws.clients]
-      .filter(client => ids.includes(client.id))
-      .forEach(client => {
-        client.send(message)
-      })
-
-  ws.on('connection', socket => {
-    socket.on('message', event => {
-      const data = JSON.parse(event)
-
-      switch (data.type) {
-        case 'JOIN_GAME':
-          socket.id = Id.generate()
-          const room_index = Room.getWithOpponent()
-          if (room_index >= 0) {
-            // room found
-            socket.room = room_index
-            Room.seatUser(room_index, socket.id)
-            ws.start_game(room_index)
-          } else {
-            // room not found, creating
-            ws.create_room(socket.id)
-            socket.room = Room.getLast()
-          }
-
-          break
-        case 'SEND_GAME_UPDATE':
-          const { room } = socket
-          delete data.type
-          ws.update_room(room, data)
-      }
+  client.send(
+    JSON.stringify({
+      type: 'ROOM_JOINED',
+      room: newRoom.toJS(),
     })
+  )
+  send_to_all(
+    JSON.stringify({
+      type: 'ROOMS_UPDATED',
+      rooms: roomManager.get_all_as_json(),
+    })
+  )
+}
+
+function join_room(client, data) {
+  const room = roomManager.seat_user(data.uuid, client.id)
+  if (!room) {
+    const body = {
+      type: 'FAILED_TO_JOIN_ROOM',
+      info: 'ROOM_NOT_FOUND',
+      id: data.uuid,
+    }
+    client.send(JSON.stringify(body))
+    return
+  }
+
+  client.room_id = data.uuid
+  if (room.max_players === room.player_ids.size) {
+    start_game(data.uuid, client.id)
+  } else {
+    const body = {
+      type: 'ROOM_JOINED',
+      room: room.toJS(),
+    }
+    client.send(JSON.stringify(body))
+    send_to_all(
+      JSON.stringify({
+        type: 'ROOMS_UPDATED',
+        rooms: roomManager.get_all_as_json(),
+      })
+    )
+  }
+}
+
+function update_room(room_id, board) {
+  console.log(board)
+
+  roomManager.set(room_id, { board })
+
+  const { player_ids } = roomManager.get(room_id)
+  const body = { ...board, type: 'GAME_UPDATED' }
+  send_to_ids(player_ids, JSON.stringify(body))
+}
+
+function start_game(room_id, joiner_id) {
+  const { player_ids } = roomManager.get(room_id)
+
+  const board = Board.getNew(player_ids)
+  roomManager.set(room_id, { board })
+
+  send_start(player_ids, joiner_id)
+  const body = { ...board, type: 'GAME_UPDATED' }
+  send_to_ids(player_ids, JSON.stringify(body))
+}
+
+function send_start(ids, joiner_id) {
+  // tell the users which player joined last
+  const owner_id = Id.getOpponentId(ids, joiner_id)
+  const joinerStartBody = {
+    type: 'GAME_START',
+    opponentId: owner_id,
+  }
+  const joinerStartMessage = JSON.stringify(joinerStartBody)
+  send_to_ids([joiner_id], joinerStartMessage)
+
+  const ownerStartBody = {
+    type: 'GAME_START',
+    opponentId: joiner_id,
+  }
+  const ownerStartMessage = JSON.stringify(ownerStartBody)
+  send_to_ids([owner_id], ownerStartMessage)
+}
+
+function send_to_ids(ids, message) {
+  ;[..._appWithWs.clients]
+    .filter(client => ids.includes(client.id))
+    .forEach(client => {
+      client.send(message)
+    })
+}
+
+function send_to_all(message) {
+  ;[..._appWithWs.clients].forEach(client => {
+    console.log(client.id)
+    client.send(message)
+  })
+}
+
+function leave_room(client) {
+  roomManager.unseat_user(client.room_id, client.id)
+  client.room_id = undefined
+  client.send(
+    JSON.stringify({
+      type: 'ROOM_LEFT',
+    })
+  )
+  send_to_all(
+    JSON.stringify({
+      type: 'ROOMS_UPDATED',
+      rooms: roomManager.get_all_as_json(),
+    })
+  )
+}
+
+export const setupSocket = (client, appWithWs) => {
+  _appWithWs = appWithWs
+  client.on('message', msg => {
+    const data = JSON.parse(msg)
+    switch (data.type) {
+      case 'REGISTER':
+        register(client)
+        break
+
+      case 'CREATE_ROOM':
+        create_room(client, data)
+        break
+
+      case 'JOIN_ROOM':
+        join_room(client, data)
+        break
+
+      case 'LEAVE_ROOM':
+        leave_room(client)
+        break
+
+      case 'SEND_GAME_UPDATE':
+        delete data.type
+        update_room(client.room_id, data)
+    }
   })
 
   return ws
