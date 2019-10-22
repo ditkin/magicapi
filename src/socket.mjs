@@ -8,7 +8,8 @@ const { List } = immutable
 let _appWithWs
 
 function register(client) {
-  console.log(client)
+  console.log(`registering client ${client.id}`)
+
   client.id = Id.generate()
   const body = {
     type: 'REGISTERED',
@@ -152,7 +153,6 @@ export const setupSocket = (client, appWithWs) => {
     const data = JSON.parse(msg)
     switch (data.type) {
       case 'REGISTER':
-        console.log(data)
         register(client)
         break
 

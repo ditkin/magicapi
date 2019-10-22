@@ -83,12 +83,7 @@ app.get('/decks', json_parser, (req, res, db) => {
 })
 
 app.ws('/', (ws, req) => {
-  console.log('started')
   setupSocket(ws, appWithWs.getWss())
-  // console.log('started')
-  // ws.on('message', msg => {
-  //   console.log(msg)
-  // })
 })
 
 app.listen(PORT, () =>
