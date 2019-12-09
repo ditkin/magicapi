@@ -13,10 +13,10 @@ function register(client) {
   client.id = Id.generate()
   const body = {
     type: 'REGISTERED',
+    rooms: roomManager.get_all_as_json(),
     user: {
       id: client.id,
     },
-    rooms: roomManager.get_all_as_json(),
   }
   client.send(JSON.stringify(body))
 }
@@ -60,14 +60,16 @@ function join_room(client, data) {
   }
 
   client.room_id = data.uuid
+  // confirm the joiner joined this room
+  const body = {
+    type: 'ROOM_JOINED',
+    room: room.toJS(),
+  }
+  client.send(JSON.stringify(body))
+
   if (room.max_players === room.player_ids.size) {
     start_game(data.uuid, client.id)
   } else {
-    const body = {
-      type: 'ROOM_JOINED',
-      room: room.toJS(),
-    }
-    client.send(JSON.stringify(body))
     send_to_all(
       JSON.stringify({
         type: 'ROOMS_UPDATED',
@@ -78,8 +80,6 @@ function join_room(client, data) {
 }
 
 function update_room(room_id, board) {
-  console.log(board)
-
   roomManager.set(room_id, { board })
 
   const { player_ids } = roomManager.get(room_id)
@@ -147,10 +147,24 @@ function leave_room(client) {
   )
 }
 
+function send_chat(client, data) {
+  const { room_id } = client
+  const { chat, player_ids } = roomManager.get(room_id)
+  const appendedChat = chat.push(data.chat)
+  roomManager.set(client.room_id, { chat: appendedChat })
+
+  const body = {
+    chat: appendedChat.toArray(),
+    type: 'CHAT_SENT',
+  }
+  send_to_ids(player_ids, JSON.stringify(body))
+}
+
 export const setupSocket = (client, appWithWs) => {
   _appWithWs = appWithWs
   client.on('message', msg => {
     const data = JSON.parse(msg)
+    console.log(data)
     switch (data.type) {
       case 'REGISTER':
         register(client)
@@ -166,6 +180,11 @@ export const setupSocket = (client, appWithWs) => {
 
       case 'LEAVE_ROOM':
         leave_room(client)
+        break
+
+      case 'SEND_CHAT':
+        console.log(data)
+        send_chat(client, data)
         break
 
       case 'SEND_GAME_UPDATE':
