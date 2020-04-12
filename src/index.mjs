@@ -12,6 +12,7 @@ import * as utils from './http_utils.mjs'
 import { setupSocket } from './socket.mjs'
 
 const app = express()
+app.use(cookie_parser())
 const appWithWs = empowerWithSocket(app)
 
 const PORT = process.env.PORT || 1234
@@ -48,6 +49,13 @@ app.use(session(session_params))
 
 // Enable CORS
 app.use((req, res, next) => {
+  console.log(req.hostname)
+  // enable for local dev
+  if (req.hostname.includes('localhost')) {
+    res.header('Access-Control-Allow-Origin', '*')
+    return next()
+  }
+
   res.header(
     'Access-Control-Allow-Origin',
     'chrome-extension://kdjokbdmplcfbigkcjekknnfboidokfo'
@@ -62,14 +70,37 @@ app.use((req, res, next) => {
 
 app.get('/', json_parser, (req, res, db) => {
   console.log('healthcheck')
+  const cookie = req.cookies.cookieName
+  if (cookie) {
+    console.log('cookie exists', cookie)
+  } else {
+    var randomNumber = Math.random().toString()
+    res.cookie('cookieName', randomNumber, {
+      expires: new Date(Date.now() + 900000),
+      secure: false,
+      httpOnly: false,
+      sameSite: 'none',
+      // domain: 'localhost',
+    })
+    console.log('cookie created successfully')
+  }
   res.writeHead(200)
-
   res.end('healthy')
 })
 
 app.post('/login', json_parser, (req, res, db) => {
   console.log('Logging In')
-  utils.handle_login(req, res, db)
+  const cookie = req.cookies.name
+  if (cookie) {
+    console.log('cookie exists', cookie)
+  } else {
+    res.cookie('name', req.body.name, {
+      expires: new Date(Date.now() + 900000),
+      httpOnly: false,
+      sameSite: 'none',
+    })
+    console.log('cookie created successfully')
+  }
 })
 
 app.post('/deck', json_parser, (req, res, db) => {
@@ -83,7 +114,8 @@ app.get('/decks', json_parser, (req, res, db) => {
 })
 
 app.ws('/', (ws, req) => {
-  setupSocket(ws, appWithWs.getWss())
+  console.log('websocket: cookie: ', req.cookie)
+  setupSocket(ws, appWithWs.getWss(), req)
 })
 
 app.listen(PORT, () =>

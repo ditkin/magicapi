@@ -160,7 +160,7 @@ function send_chat(client, data) {
   send_to_ids(player_ids, JSON.stringify(body))
 }
 
-export const setupSocket = (client, appWithWs) => {
+export const setupSocket = (client, appWithWs, req) => {
   _appWithWs = appWithWs
   client.on('message', msg => {
     const data = JSON.parse(msg)
